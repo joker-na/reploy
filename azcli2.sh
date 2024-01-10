@@ -214,12 +214,12 @@ menu() {
 
     echo -e "${GREEN}1. 安装 Azure CLI${NC}"
     echo -e "${GREEN}2. 登录 Azure CLI${NC}"
-    echo -e "${GREEN}5. 列出当前账户下的资源组${NC}"
-    echo -e "${GREEN}6. 卸载 Azure CLI${NC}"
+    echo -e "${GREEN}3. 列出当前账户下的资源组${NC}"
+    echo -e "${GREEN}4. 卸载 Azure CLI${NC}"
     echo -e
-    echo -e "${GREEN}7. 创建实例${NC}"
-    echo -e "${GREEN}8. 删除所有资源组${NC}"
-    echo -e "${GREEN}9. 删除特定资源组${NC}"
+    echo -e "${GREEN}5. 创建实例${NC}"
+    echo -e "${GREEN}6. 删除所有资源组${NC}"
+    echo -e "${GREEN}7. 删除特定资源组${NC}"
     echo -e "${GREEN}0. 退出${NC}"
     read -p "输入您的选择: " choice
 
