@@ -37,6 +37,19 @@ install_azure() {
     menu
 }
 
+
+select_azure_account() {
+    read -p "输入Azure账户名称（用于创建或选择配置目录）: " account_name
+    export AZURE_CONFIG_DIR=~/.azure-$account_name
+    if [ ! -d "$AZURE_CONFIG_DIR" ]; then
+        mkdir -p $AZURE_CONFIG_DIR
+        echo -e "${GREEN}为账户 $account_name 创建配置目录${NC}"
+    else
+        echo -e "${GREEN}使用账户 $account_name 的现有配置目录${NC}"
+    fi
+}
+
+
 login() {
     select_azure_account
     if command -v az > /dev/null 2>&1; then
