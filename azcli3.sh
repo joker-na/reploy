@@ -83,58 +83,6 @@ login() {
     menu
 }
 
-
-
-change_vm_ip_to_basic() {
-    select_azure_account
-    check_azure
-
-    echo -e "${GREEN}正在列出所有虚拟机...${NC}"
-    local vms=($(az vm list --query "[].{name:name, resourceGroup:resourceGroup}" -o tsv))
-
-    if [ ${#vms[@]} -eq 0 ]; then
-        echo -e "${RED}没有找到虚拟机${NC}"
-        menu
-        return
-    fi
-
-    local i=1
-    for vm in "${vms[@]}"; do
-        echo "$i) ${vm%%$'\t'*}"
-        ((i++))
-    done
-
-    read -p "选择要更换 IP 的虚拟机序号: " vm_index
-    if [[ "$vm_index" =~ ^[0-9]+$ ]] && [ "$vm_index" -ge 1 ] && [ "$vm_index" -le "${#vms[@]}" ]; then
-        local selected_vm=${vms[$vm_index-1]}
-        local vm_name=${selected_vm%%$'\t'*}
-        local resource_group=${selected_vm##*$'\t'}
-        local new_ip_name="${vm_name}-new-basic-ip"
-
-        # 创建新的 Basic SKU 公共 IP 地址
-        echo -e "${GREEN}正在创建新的 Basic SKU 公共 IP 地址...${NC}"
-        az network public-ip create --name $new_ip_name --resource-group $resource_group --sku Basic --allocation-method Dynamic
-
-        # 获取虚拟机的网络接口名称
-        local nic_name=$(az vm show --name $vm_name --resource-group $resource_group --query "networkProfile.networkInterfaces[0].id" -o tsv | xargs basename)
-        local ip_config_name=$(az network nic ip-config list --nic-name $nic_name --resource-group $resource_group --query "[0].name" -o tsv)
-
-        # 更新 VM 的网络接口以使用新的
-        echo -e "${GREEN}正在更新虚拟机 $vm_name 的网络接口以使用新的公共 IP 地址...${NC}"
-        az network nic ip-config update --name $ip_config_name --nic-name $nic_name --resource-group $resource_group --public-ip-address $new_ip_name
-        echo -e "${GREEN}正在获取虚拟机 $vm_name 的新 IP 地址...${NC}"
-        sleep 30  # 等待一段时间以确保 IP 地址更新
-        local new_vm_ip=$(az vm list-ip-addresses --name $vm_name --resource-group $resource_group --query "[0].virtualMachine.network.publicIpAddresses[0].ipAddress" -o tsv)
-
-        echo -e "${GREEN}虚拟机 $vm_name 的新公共 IP 地址为: $new_vm_ip${NC}"
-else
-    echo -e "${RED}无效的选择，请重新选择.${NC}"
-    change_vm_ip_to_basic
-fi
-
-menu
-}
-
 show_vm_info() {
     select_azure_account
     check_azure
@@ -365,8 +313,7 @@ menu() {
     echo -e
     echo -e "${GREEN}5. 创建实例${NC}"
     echo -e "${GREEN}6. 删除特定资源组${NC}"
-    echo -e "${GREEN}7. 更换实例IPP${NC}"
-    echo -e "${GREEN}8. 实例信息${NC}"
+    echo -e "${GREEN}7. 实例信息${NC}"
     echo -e "${GREEN}0. 退出${NC}"
     read -p "输入您的选择: " choice
 
@@ -393,10 +340,6 @@ menu() {
             ;;
         
         7)
-            change_vm_ip_to_basic
-            ;;
-        
-        8)
             show_vm_info
             ;;        
         0)
