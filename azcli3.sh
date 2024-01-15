@@ -255,8 +255,9 @@ create_vm() {
             exit 1
         fi
     fi
+    local vm_name="${LOCATION}-vm"
 
-    nohup az vm create --resource-group "$LOCATION" --name "$LOCATION" --location "$LOCATION" --image Debian:debian-10:10:latest --admin-username "$USERNAME" --admin-password "$PASSWORD" --size $selected_size --storage-sku Premium_LRS --os-disk-size-gb 64 > /dev/null 2>&1 &
+    nohup az vm create --resource-group "$LOCATION" --name $vm_name --location "$LOCATION" --image Debian:debian-10:10:latest --admin-username "$USERNAME" --admin-password "$PASSWORD" --size $selected_size --storage-sku Premium_LRS --os-disk-size-gb 64 > /dev/null 2>&1 &
     pid=$!
     echo -e "\e[36m已在后台执行 az vm create 命令\e[0m"
 
@@ -268,24 +269,24 @@ create_vm() {
         # 添加网络安全组规则允许所有端口流量
         echo -e "${GREEN}添加网络安全组规则...${NC}"
         az network nsg rule create --resource-group "$LOCATION" --nsg-name "$LOCATION"NSG --name "AllowAll" --priority 100 --access Allow --direction Inbound --protocol '*' --source-address-prefix '*' --source-port-range '*' --destination-address-prefix '*' --destination-port-range '*'
-    echo -e "${GREEN}正在尝试获取虚拟机的 IP 地址...${NC}"
-    # 尝试获取 IP 地址，最多重试 5 次
-    local vm_ip=""
-    local max_attempts=5
-    local attempt=1
-    while [ $attempt -le $max_attempts ]; do
-        echo -e "等待 IP 地址分配...尝试 $attempt / $max_attempts"
-        vm_ip=$(az vm list-ip-addresses --name $LOCATION --resource-group $resource_group --query "[0].virtualMachine.network.publicIpAddresses[0].ipAddress" -o tsv)
+	echo -e "${GREEN}正在尝试获取虚拟机的 IP 地址...${NC}"
+        # 尝试获取 IP 地址，最多重试 5 次
+        local vm_ip=""
+        local max_attempts=5
+        local attempt=1
+        while [ $attempt -le $max_attempts ]; do
+            echo -e "等待 IP 地址分配...尝试 $attempt / $max_attempts"
+            vm_ip=$(az vm list-ip-addresses --name $vm_name --resource-group "$LOCATION" --query "[0].virtualMachine.network.publicIpAddresses[0].ipAddress" -o tsv)
 
-        if [ -n "$vm_ip" ]; then
-            echo -e "${GREEN}IP 地址获取成功: $vm_ip${NC}"
-            break
-        else
-            echo -e "${RED}未能获取 IP 地址，正在重试...${NC}"
-            ((attempt++))
-            sleep 10
-        fi
-    done
+            if [ -n "$vm_ip" ]; then
+                echo -e "${GREEN}IP 地址获取成功: $vm_ip${NC}"
+                break
+            else
+                echo -e "${RED}未能获取 IP 地址，正在重试...${NC}"
+                ((attempt++))
+                sleep 10
+            fi
+        done
 
     # 使用获取到的 IP 地址执行 sshpass 操作
     if [ -n "$vm_ip" ]; then
