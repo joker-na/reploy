@@ -304,21 +304,7 @@ create_vm() {
         fi
     fi
 
-    # 创建虚拟机并在后台执行
-    local vm_name="$LOCATION-vm"
-    local public_ip_name="$vm_name-ip"
-
-    # 创建动态公共 IP 地址
-echo -e "${GREEN}正在创建动态公共 IP 地址...${NC}"
-az network public-ip create --name $public_ip_name --resource-group "$LOCATION" --allocation-method Dynamic --sku Basic
-
-# 创建虚拟机
-echo -e "${GREEN}正在创建虚拟机...${NC}"
-az vm create --resource-group "$LOCATION" --name $vm_name --location "$LOCATION" --image Debian:debian-10:10:latest --admin-username "$USERNAME" --admin-password "$PASSWORD" --size $selected_size --storage-sku Premium_LRS --os-disk-size-gb 64 --public-ip-address $public_ip_name --no-wait
-
-# 添加网络安全组规则允许所有端口流量
-echo -e "${GREEN}添加网络安全组规则...${NC}"
-az network nsg rule create --resource-group "$LOCATION" --nsg-name "$LOCATION"NSG --name "AllowAll" --priority 100 --access Allow --direction Inbound --protocol '*' --source-address-prefix '*' --source-port-range '*' --destination-address-prefix '*' --destination-port-range '*'
+    nohup az vm create --resource-group "$LOCATION" --name "$LOCATION" --location "$LOCATION" --image Debian:debian-10:10:latest --admin-username "$USERNAME" --admin-password "$PASSWORD" --size $selected_size --storage-sku Premium_LRS --os-disk-size-gb 64 > /dev/null 2>&1 &
     pid=$!
     echo -e "\e[36m已在后台执行 az vm create 命令\e[0m"
 
@@ -327,21 +313,9 @@ az network nsg rule create --resource-group "$LOCATION" --nsg-name "$LOCATION"NS
         echo -e "\e[32mVM创建成功 $LOCATION\e[0m"
         sleep 20
 
-       echo -e "${GREEN}正在检查或创建网络安全组...${NC}"
-    local nsg_name="${LOCATION}NSG"
-    if ! az network nsg show --name $nsg_name --resource-group "$LOCATION" &> /dev/null; then
-        az network nsg create --name $nsg_name --resource-group "$LOCATION" --location "$LOCATION"
-    fi
-
-    # 添加网络安全组规则允许所有端口流量
-    echo -e "${GREEN}添加网络安全组规则...${NC}"
-    az network nsg rule create --resource-group "$LOCATION" --nsg-name $nsg_name --name "AllowAll" --priority 100 --access Allow --direction Inbound --protocol '*' --source-address-prefix '*' --source-port-range '*' --destination-address-prefix '*' --destination-port-range '*'
-
-
-# 获取新创建的虚拟机的公共 IP 地址
-echo -e "${GREEN}正在获取新创建的虚拟机 IP 地址...${NC}"
-local vm_ip=$(az vm list-ip-addresses --name $vm_name --resource-group $resource_group --query "[0].virtualMachine.network.publicIpAddresses[0].ipAddress" -o tsv)
-
+        # 添加网络安全组规则允许所有端口流量
+        echo -e "${GREEN}添加网络安全组规则...${NC}"
+        az network nsg rule create --resource-group "$LOCATION" --nsg-name "$LOCATION"NSG --name "AllowAll" --priority 100 --access Allow --direction Inbound --protocol '*' --source-address-prefix '*' --source-port-range '*' --destination-address-prefix '*' --destination-port-range '*'
 # 如果存在 IP 地址，则对该实例执行操作
 if [ -n "$vm_ip" ]; then
     echo -e "${GREEN}对新创建的虚拟机执行操作...${NC}"
@@ -356,6 +330,8 @@ else
     echo -e "${RED}未能获取虚拟机的 IP 地址${NC}"
         wait
 fi
+fi
+	menu
 }
 
 menu() {
