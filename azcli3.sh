@@ -97,43 +97,37 @@ list_resource_groups() {
 delete_resource_group() {
     select_azure_account
     check_azure
-    echo -e "${GREEN}请选择要删除的资源组：${NC}"
-    az group list --output table
-    read -p "输入要删除的资源组序号 (0 返回上一级, q 退出): " rg_index
 
-    case $rg_index in
-        0)
-            menu
-            ;;
-        q)
-            echo -e "${RED}退出...${NC}"
-            exit 1
-            ;;
-        *)
-            if [ "$rg_index" -gt 0 ] 2>/dev/null; then
-                rg_name=$(az group list --output table | awk -v idx=$rg_index 'NR==idx+2 {print $1}')
-                if [ -n "$rg_name" ]; then
-                    echo -e "${RED}注意: 删除资源组将删除其中的所有资源，这是一个不可逆操作！${NC}"
-                    read -p "确定要继续吗？ (y/n): " confirm
-                    if [ "$confirm" == "y" ]; then
-                        nohup az group delete --name $rg_name --yes --no-wait > /dev/null 2>&1 &
-                        pid=$!
-                        echo -e "\e[36m正在后台执行 az group delete 命令\e[0m"
-                        wait $pid
-                        echo -e "\e[32m资源组删除成功: $rg_name\e[0m"
-                    else
-                        echo -e "${RED}取消删除操作${NC}"
-                    fi
-                else
-                    echo -e "${RED}无效的选择，请重新选择.${NC}"
-                    delete_resource_group
-                fi
-            else
-                echo -e "${RED}无效的选择，请重新选择.${NC}"
-                delete_resource_group
-            fi
-            ;;
-    esac
+    # 获取并列出所有Location
+    echo -e "${GREEN}正在获取可用地区...${NC}"
+    local locations=($(az account list-locations --query "[].name" -o tsv))
+    local i=1
+    for loc in "${locations[@]}"; do
+        echo "$i) $loc"
+        ((i++))
+    done
+
+    # 用户选择Location
+    read -p "选择要删除的地区的序号: " loc_index
+    if [[ "$loc_index" =~ ^[0-9]+$ ]] && [ "$loc_index" -ge 1 ] && [ "$loc_index" -le "${#locations[@]}" ]; then
+        local selected_location=${locations[$loc_index-1]}
+        echo -e "${GREEN}你选择了地区：$selected_location${NC}"
+
+        # 列出并删除该地区下的所有资源组
+        local resource_groups=($(az group list --query "[?location=='$selected_location'].name" -o tsv))
+        if [ ${#resource_groups[@]} -eq 0 ]; then
+            echo -e "${RED}在 $selected_location 地区没有找到资源组${NC}"
+        else
+            for rg in "${resource_groups[@]}"; do
+                echo -e "${RED}正在删除资源组：$rg...${NC}"
+                az group delete --name $rg --yes --no-wait
+            done
+            echo -e "${GREEN}在 $selected_location 地区的所有资源组已被删除${NC}"
+        fi
+    else
+        echo -e "${RED}无效的选择，请重新选择.${NC}"
+        delete_resource_group
+    fi
 
     menu
 }
