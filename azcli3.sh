@@ -310,7 +310,7 @@ menu() {
     echo -e "${GREEN}3. 列出当前账户下的资源组${NC}"
     echo -e "${GREEN}4. 卸载 Azure CLI${NC}"
     echo -e
-    echo -e "${GREEN}5. 创建实例1${NC}"
+    echo -e "${GREEN}5. 创建实例${NC}"
     echo -e "${GREEN}6. 删除特定资源组${NC}"
     echo -e "${GREEN}7. 实例信息${NC}"
     echo -e "${GREEN}0. 退出${NC}"
