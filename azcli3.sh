@@ -98,32 +98,35 @@ delete_resource_group() {
     select_azure_account
     check_azure
 
-    # 获取并列出所有Location
-    echo -e "${GREEN}正在获取可用地区...${NC}"
-    local locations=($(az account list-locations --query "[].name" -o tsv))
+    # 获取当前账户下的所有资源组及其地区
+    echo -e "${GREEN}正在获取当前账户下的资源组地区...${NC}"
+    local rg_locations=($(az group list --query "[].location" -o tsv | sort -u))
+    
+    if [ ${#rg_locations[@]} -eq 0 ]; then
+        echo -e "${RED}当前账户下没有资源组${NC}"
+        menu
+        return
+    fi
+
     local i=1
-    for loc in "${locations[@]}"; do
+    for loc in "${rg_locations[@]}"; do
         echo "$i) $loc"
         ((i++))
     done
 
-    # 用户选择Location
-    read -p "选择要删除的地区的序号: " loc_index
-    if [[ "$loc_index" =~ ^[0-9]+$ ]] && [ "$loc_index" -ge 1 ] && [ "$loc_index" -le "${#locations[@]}" ]; then
-        local selected_location=${locations[$loc_index-1]}
+    # 用户选择地区
+    read -p "选择要删除的资源组的地区序号: " loc_index
+    if [[ "$loc_index" =~ ^[0-9]+$ ]] && [ "$loc_index" -ge 1 ] && [ "$loc_index" -le "${#rg_locations[@]}" ]; then
+        local selected_location=${rg_locations[$loc_index-1]}
         echo -e "${GREEN}你选择了地区：$selected_location${NC}"
 
-        # 列出并删除该地区下的所有资源组
+        # 删除该地区下的所有资源组
         local resource_groups=($(az group list --query "[?location=='$selected_location'].name" -o tsv))
-        if [ ${#resource_groups[@]} -eq 0 ]; then
-            echo -e "${RED}在 $selected_location 地区没有找到资源组${NC}"
-        else
-            for rg in "${resource_groups[@]}"; do
-                echo -e "${RED}正在删除资源组：$rg...${NC}"
-                az group delete --name $rg --yes --no-wait
-            done
-            echo -e "${GREEN}在 $selected_location 地区的所有资源组已被删除${NC}"
-        fi
+        for rg in "${resource_groups[@]}"; do
+            echo -e "${RED}正在删除资源组：$rg...${NC}"
+            az group delete --name $rg --yes --no-wait
+        done
+        echo -e "${GREEN}在 $selected_location 地区的所有资源组已被删除${NC}"
     else
         echo -e "${RED}无效的选择，请重新选择.${NC}"
         delete_resource_group
@@ -131,6 +134,7 @@ delete_resource_group() {
 
     menu
 }
+
 
 uninstall_azure() {
     if command -v az > /dev/null 2>&1; then
@@ -238,7 +242,6 @@ resource_group() {
 }
 
 menu() {
-    echo -e "${GREEN}修改自：粑屁 Telegram: MJJBPG${NC}"
     echo -e
 
 
