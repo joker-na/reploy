@@ -91,8 +91,8 @@ change_vm_ip() {
 
     # 列出所有虚拟机
     echo -e "${GREEN}正在列出所有虚拟机...${NC}"
-    local vms=($(az vm list --query "[].name" -o tsv))
-    
+    local vms=($(az vm list --query "[].{name:name, resourceGroup:resourceGroup}" -o tsv))
+
     if [ ${#vms[@]} -eq 0 ]; then
         echo -e "${RED}没有找到虚拟机${NC}"
         menu
@@ -101,7 +101,7 @@ change_vm_ip() {
 
     local i=1
     for vm in "${vms[@]}"; do
-        echo "$i) $vm"
+        echo "$i) ${vm%%$'\t'*}"
         ((i++))
     done
 
@@ -109,25 +109,28 @@ change_vm_ip() {
     read -p "选择要更换 IP 的虚拟机序号: " vm_index
     if [[ "$vm_index" =~ ^[0-9]+$ ]] && [ "$vm_index" -ge 1 ] && [ "$vm_index" -le "${#vms[@]}" ]; then
         local selected_vm=${vms[$vm_index-1]}
-        echo -e "${GREEN}你选择了虚拟机：$selected_vm${NC}"
+        local vm_name=${selected_vm%%$'\t'*}
+        local resource_group=${selected_vm##*$'\t'}
 
-        # 获取虚拟机的网络接口
-        local nic=$(az vm show --name $selected_vm --query "networkProfile.networkInterfaces[0].id" -o tsv)
+        echo -e "${GREEN}你选择了虚拟机：$vm_name${NC}"
+
+        # 获取虚拟机的网络接口名称
+        local nic_name=$(az vm show --name $vm_name --resource-group $resource_group --query "networkProfile.networkInterfaces[0].id" -o tsv | xargs basename)
 
         # 解除现有公共 IP 地址的关联
         echo -e "${GREEN}正在解除现有公共 IP 地址的关联...${NC}"
-        az network nic ip-config update --ids $nic --clear-public-ip-address
+        az network nic ip-config update --resource-group $resource_group --nic-name $nic_name --name ipconfig1 --clear-public-ip-address
 
         # 创建新的公共 IP 地址（动态）
         echo -e "${GREEN}正在创建新的动态公共 IP 地址...${NC}"
-        local new_ip_name="${selected_vm}-ip"
-        az network public-ip create --name $new_ip_name --allocation-method Dynamic
+        local new_ip_name="${vm_name}-ip"
+        az network public-ip create --name $new_ip_name --allocation-method Dynamic --resource-group $resource_group
 
         # 关联新的公共 IP 地址
         echo -e "${GREEN}正在将新的公共 IP 地址关联到虚拟机...${NC}"
-        az network nic ip-config update --ids $nic --public-ip-address $new_ip_name
+        az network nic ip-config update --resource-group $resource_group --nic-name $nic_name --name ipconfig1 --public-ip-address $new_ip_name
 
-        echo -e "${GREEN}虚拟机 $selected_vm 的 IP 地址已更新为动态 IP${NC}"
+        echo -e "${GREEN}虚拟机 $vm_name 的 IP 地址已更新为动态 IP${NC}"
     else
         echo -e "${RED}无效的选择，请重新选择.${NC}"
         change_vm_ip
@@ -135,6 +138,7 @@ change_vm_ip() {
 
     menu
 }
+
 
 
 
