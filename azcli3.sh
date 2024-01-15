@@ -264,7 +264,7 @@ create_vm() {
     wait $pid
     if [ $? -eq 0 ]; then
         echo -e "\e[32mVM创建成功 $LOCATION\e[0m"
-        sleep 30
+        sleep 20
 
         # 添加网络安全组规则允许所有端口流量
         echo -e "${GREEN}添加网络安全组规则...${NC}"
