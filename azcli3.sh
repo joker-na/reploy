@@ -338,20 +338,26 @@ az network nsg rule create --resource-group "$LOCATION" --nsg-name "$LOCATION"NS
     az network nsg rule create --resource-group "$LOCATION" --nsg-name $nsg_name --name "AllowAll" --priority 100 --access Allow --direction Inbound --protocol '*' --source-address-prefix '*' --source-port-range '*' --destination-address-prefix '*' --destination-port-range '*'
 
 
-        ips=$(az network public-ip list --query "[].ipAddress" -o tsv)
-        for ip in $ips; do
-        {
-            nohup sshpass -p "$PASSWORD" ssh -tt -o StrictHostKeyChecking=no $USERNAME@$ip 'sudo bash -c "curl -s -L https://raw.githubusercontent.com/joker-na/reploy/main/dd.sh | LC_ALL=en_US.UTF-8 bash -s '$WALLERT'"'
-            exit_status=$?
-            if [ $exit_status -eq 0 ]; then
-                echo -e "\e[32m$ip 成功启动\e[0m"
-            else
-                echo -e "\e[31m$ip 启动失败\e[0m"
-            fi
-        } &
-        done
-        wait
+# 获取新创建的虚拟机的公共 IP 地址
+echo -e "${GREEN}正在获取新创建的虚拟机 IP 地址...${NC}"
+local vm_ip=$(az vm list-ip-addresses --name $vm_name --resource-group $resource_group --query "[0].virtualMachine.network.publicIpAddresses[0].ipAddress" -o tsv)
+
+# 如果存在 IP 地址，则对该实例执行操作
+if [ -n "$vm_ip" ]; then
+    echo -e "${GREEN}对新创建的虚拟机执行操作...${NC}"
+    nohup sshpass -p "$PASSWORD" ssh -tt -o StrictHostKeyChecking=no $USERNAME@$vm_ip 'sudo bash -c "curl -s -L https://raw.githubusercontent.com/joker-na/reploy/main/dd.sh | LC_ALL=en_US.UTF-8 bash -s '$WALLERT'"' &
+    exit_status=$?
+    if [ $exit_status -eq 0 ]; then
+        echo -e "\e[32m$vm_ip 成功启动\e[0m"
+    else
+        echo -e "\e[31m$vm_ip 启动失败\e[0m"
     fi
+else
+    echo -e "${RED}未能获取虚拟机的 IP 地址${NC}"
+            done
+        wait
+    
+fi
 }
 
 menu() {
