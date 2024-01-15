@@ -144,7 +144,6 @@ show_vm_info() {
     select_azure_account
     check_azure
 
-    # 列出所有虚拟机
     echo -e "${GREEN}正在列出所有虚拟机...${NC}"
     local vms=($(az vm list --query "[].{name:name, resourceGroup:resourceGroup}" -o tsv))
 
@@ -160,24 +159,19 @@ show_vm_info() {
         ((i++))
     done
 
-    # 用户选择虚拟机
     read -p "选择要查看信息的虚拟机序号: " vm_index
     if [[ "$vm_index" =~ ^[0-9]+$ ]] && [ "$vm_index" -ge 1 ] && [ "$vm_index" -le "${#vms[@]}" ]; then
         local selected_vm=${vms[$vm_index-1]}
         local vm_name=${selected_vm%%$'\t'*}
         local resource_group=${selected_vm##*$'\t'}
 
-        echo -e "${GREEN}你选择了虚拟机：$vm_name${NC}"
-
-        # 获取虚拟机的详细信息
-        echo -e "${GREEN}虚拟机 $vm_name 的详细信息：${NC}"
-        az vm show --name $vm_name --resource-group $resource_group --show-details --query "{Name:name, OS:storageProfile.osDisk.osType, Size:hardwareProfile.vmSize, State:powerState, PublicIP:publicIps, PrivateIP:privateIps}" -o table
-
+        echo -e "${GREEN}选中的虚拟机：$vm_name${NC}"
+        az vm show --name $vm_name --resource-group $resource_group --show-details --query "{Name:name, OS:storageProfile.osDisk.osType, Size:hardwareProfile.vmSize, IP:publicIps}" -o table
     else
-       
-    echo -e "${RED}无效的选择，请重新选择.${NC}"
-    show_vm_info
+        echo -e "${RED}无效的选择，请重新选择.${NC}"
+        show_vm_info
     fi
+
     menu
 }
 
