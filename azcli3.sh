@@ -275,7 +275,7 @@ create_vm() {
     local attempt=1
     while [ $attempt -le $max_attempts ]; do
         echo -e "等待 IP 地址分配...尝试 $attempt / $max_attempts"
-        vm_ip=$(az vm list-ip-addresses --name $vm_name --resource-group $resource_group --query "[0].virtualMachine.network.publicIpAddresses[0].ipAddress" -o tsv)
+        vm_ip=$(az vm list-ip-addresses --name $LOCATION --resource-group $resource_group --query "[0].virtualMachine.network.publicIpAddresses[0].ipAddress" -o tsv)
 
         if [ -n "$vm_ip" ]; then
             echo -e "${GREEN}IP 地址获取成功: $vm_ip${NC}"
