@@ -85,7 +85,7 @@ login() {
 
 
 
-change_vm_ip() {
+restart_vm_to_change_ip() {
     select_azure_account
     check_azure
 
@@ -97,43 +97,39 @@ change_vm_ip() {
         menu
         return
     fi
+
     local i=1
     for vm in "${vms[@]}"; do
-    echo "$i) ${vm%%$'\t'*}"
-    ((i++))
+        echo "$i) ${vm%%$'\t'*}"
+        ((i++))
     done
-    read -p "选择要更换 IP 的虚拟机序号: " vm_index
+
+    read -p "选择要重启以更换 IP 的虚拟机序号: " vm_index
     if [[ "$vm_index" =~ ^[0-9]+$ ]] && [ "$vm_index" -ge 1 ] && [ "$vm_index" -le "${#vms[@]}" ]; then
-    local selected_vm=${vms[$vm_index-1]}
-    local vm_name=${selected_vm%%$'\t'*}
-    local resource_group=${selected_vm##*$'\t'}
+        local selected_vm=${vms[$vm_index-1]}
+        local vm_name=${
+        selected_vm%%$'\t'}
+        local resource_group=${selected_vm##$'\t'}
+        echo -e "${GREEN}正在停止虚拟机 $vm_name ...${NC}"
+        az vm deallocate --name $vm_name --resource-group $resource_group
+        az vm wait --name $vm_name --resource-group $resource_group --deleted --timeout 300
 
-    echo -e "${GREEN}你选择了虚拟机：$vm_name${NC}"
+        echo -e "${GREEN}正在启动虚拟机 $vm_name ...${NC}"
+        az vm start --name $vm_name --resource-group $resource_group
+        az vm wait --name $vm_name --resource-group $resource_group --updated --timeout 300
 
-    # 获取虚拟机的网络接口名称
-    local nic_name=$(az vm show --name $vm_name --resource-group $resource_group --query "networkProfile.networkInterfaces[0].id" -o tsv | xargs basename)
+        echo -e "${GREEN}虚拟机 $vm_name 已重启。正在获取最新的 IP 地址...${NC}"
+        local vm_ip=$(az vm list-ip-addresses --name $vm_name --resource-group $resource_group --query "[0].virtualMachine.network.publicIpAddresses[0].ipAddress" -o tsv)
 
-    # 解除现有公共 IP 地址的关联
-    echo -e "${GREEN}正在解除现有公共 IP 地址的关联...${NC}"
-    az network nic ip-config update --name ipconfig1 --nic-name $nic_name --resource-group $resource_group --clear-public-ip-address
-
-    # 创建新的公共 IP 地址（动态）
-    echo -e "${GREEN}正在创建新的动态公共 IP 地址...${NC}"
-    local new_ip_name="${vm_name}-ip"
-    az network public-ip create --name $new_ip_name --allocation-method Dynamic --resource-group $resource_group
-
-    # 关联新的公共 IP 地址
-    echo -e "${GREEN}正在将新的公共 IP 地址关联到虚拟机...${NC}"
-    az network nic ip-config update --name ipconfig1 --nic-name $nic_name --resource-group $resource_group --public-ip-address $new_ip_name
-
-    echo -e "${GREEN}虚拟机 $vm_name 的 IP 地址已更新为动态 IP${NC}"
+        echo -e "${GREEN}虚拟机 $vm_name 的当前公共 IP 地址为: $vm_ip${NC}"
 else
-    echo -e "${RED}无效的选择，请重新选择.${NC}"
-    change_vm_ip
+        echo -e "${RED}无效的选择，请重新选择.${NC}"
+        restart_vm_to_change_ip
 fi
 
 menu
 }
+
 
 
 
@@ -353,7 +349,7 @@ menu() {
             ;;
         
         7)
-            change_vm_ip
+            restart_vm_to_change_ip
             ;;
         
         8)
