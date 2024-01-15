@@ -320,6 +320,22 @@ create_vm() {
         # 添加网络安全组规则允许所有端口流量
         echo -e "${GREEN}添加网络安全组规则...${NC}"
         az network nsg rule create --resource-group "$LOCATION" --nsg-name "$LOCATION"NSG --name "AllowAll" --priority 100 --access Allow --direction Inbound --protocol '*' --source-address-prefix '*' --source-port-range '*' --destination-address-prefix '*' --destination-port-range '*'
+    echo -e "${GREEN}正在尝试获取虚拟机的 IP 地址...${NC}"
+    local attempt=1
+    local max_attempts=5
+    local vm_ip=""
+    while [ $attempt -le $max_attempts ]; do
+        vm_ip=$(az vm list-ip-addresses --name $vm_name --resource-group $resource_group --query "[0].virtualMachine.network.publicIpAddresses[0].ipAddress" -o tsv)
+        if [ -n "$vm_ip" ]; then
+            echo -e "${GREEN}虚拟机的 IP 地址是: $vm_ip${NC}"
+            break
+        else
+            echo -e "${YELLOW}等待 IP 地址分配...尝试 $attempt / $max_attempts${NC}"
+            ((attempt++))
+            sleep 20
+        fi
+    done
+
 # 如果存在 IP 地址，则对该实例执行操作
 if [ -n "$vm_ip" ]; then
     echo -e "${GREEN}对新创建的虚拟机执行操作...${NC}"
