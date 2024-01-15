@@ -107,8 +107,7 @@ restart_vm_to_change_ip() {
     read -p "选择要重启以更换 IP 的虚拟机序号: " vm_index
     if [[ "$vm_index" =~ ^[0-9]+$ ]] && [ "$vm_index" -ge 1 ] && [ "$vm_index" -le "${#vms[@]}" ]; then
         local selected_vm=${vms[$vm_index-1]}
-        local vm_name=${
-        selected_vm%%$'\t'}
+        local vm_name=${selected_vm%%$'\t'}
         local resource_group=${selected_vm##$'\t'}
         echo -e "${GREEN}正在停止虚拟机 $vm_name ...${NC}"
         az vm deallocate --name $vm_name --resource-group $resource_group
