@@ -255,7 +255,7 @@ create_vm() {
             exit 1
         fi
     fi
-    local vm_name="${LOCATION}-vm"
+    local vm_name="${LOCATION}"
 
     nohup az vm create --resource-group "$LOCATION" --name $vm_name --location "$LOCATION" --image Debian:debian-10:10:latest --admin-username "$USERNAME" --admin-password "$PASSWORD" --size $selected_size --storage-sku Premium_LRS --os-disk-size-gb 64 > /dev/null 2>&1 &
     pid=$!
