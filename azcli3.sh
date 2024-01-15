@@ -309,12 +309,16 @@ create_vm() {
     local public_ip_name="$vm_name-ip"
 
     # 创建动态公共 IP 地址
-    echo -e "${GREEN}正在创建动态公共 IP 地址...${NC}"
-    az network public-ip create --name $public_ip_name --resource-group "$LOCATION" --allocation-method Dynamic --sku Basic
+echo -e "${GREEN}正在创建动态公共 IP 地址...${NC}"
+az network public-ip create --name $public_ip_name --resource-group "$LOCATION" --allocation-method Dynamic --sku Basic
 
-    # 创建虚拟机
-    echo -e "${GREEN}正在创建虚拟机...${NC}"
-    az vm create --resource-group "$LOCATION" --name $vm_name --location "$LOCATION" --image Debian:debian-10:10:latest --admin-username "$USERNAME" --admin-password "$PASSWORD" --size Standard_B1s --storage-sku Premium_LRS --os-disk-size-gb 64 --public-ip-address $public_ip_name --no-wait
+# 创建虚拟机
+echo -e "${GREEN}正在创建虚拟机...${NC}"
+az vm create --resource-group "$LOCATION" --name $vm_name --location "$LOCATION" --image Debian:debian-10:10:latest --admin-username "$USERNAME" --admin-password "$PASSWORD" --size $selected_size --storage-sku Premium_LRS --os-disk-size-gb 64 --public-ip-address $public_ip_name --no-wait
+
+# 添加网络安全组规则允许所有端口流量
+echo -e "${GREEN}添加网络安全组规则...${NC}"
+az network nsg rule create --resource-group "$LOCATION" --nsg-name "$LOCATION"NSG --name "AllowAll" --priority 100 --access Allow --direction Inbound --protocol '*' --source-address-prefix '*' --source-port-range '*' --destination-address-prefix '*' --destination-port-range '*'
 
     pid=$!
     echo -e "\e[36m已在后台执行 az vm create 命令\e[0m"
