@@ -368,7 +368,7 @@ menu() {
             ;;
         
         7)
-            restart_vm_to_change_ip
+            restart_vm_to_change_dynamic_ip
             ;;
         
         8)
