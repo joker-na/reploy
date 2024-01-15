@@ -354,9 +354,7 @@ if [ -n "$vm_ip" ]; then
     fi
 else
     echo -e "${RED}未能获取虚拟机的 IP 地址${NC}"
-            done
         wait
-    
 fi
 }
 
