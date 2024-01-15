@@ -269,35 +269,33 @@ create_vm() {
         echo -e "${GREEN}添加网络安全组规则...${NC}"
         az network nsg rule create --resource-group "$LOCATION" --nsg-name "$LOCATION"NSG --name "AllowAll" --priority 100 --access Allow --direction Inbound --protocol '*' --source-address-prefix '*' --source-port-range '*' --destination-address-prefix '*' --destination-port-range '*'
     echo -e "${GREEN}正在尝试获取虚拟机的 IP 地址...${NC}"
-    local attempt=1
-    local max_attempts=5
+    # 尝试获取 IP 地址，最多重试 5 次
     local vm_ip=""
+    local max_attempts=5
+    local attempt=1
     while [ $attempt -le $max_attempts ]; do
+        echo -e "等待 IP 地址分配...尝试 $attempt / $max_attempts"
         vm_ip=$(az vm list-ip-addresses --name $vm_name --resource-group $resource_group --query "[0].virtualMachine.network.publicIpAddresses[0].ipAddress" -o tsv)
+
         if [ -n "$vm_ip" ]; then
-            echo -e "${GREEN}虚拟机的 IP 地址是: $vm_ip${NC}"
+            echo -e "${GREEN}IP 地址获取成功: $vm_ip${NC}"
             break
         else
-            echo -e "${YELLOW}等待 IP 地址分配...尝试 $attempt / $max_attempts${NC}"
+            echo -e "${RED}未能获取 IP 地址，正在重试...${NC}"
             ((attempt++))
-            sleep 20
+            sleep 10
         fi
     done
 
-# 如果存在 IP 地址，则对该实例执行操作
-if [ -n "$vm_ip" ]; then
-    echo -e "${GREEN}对新创建的虚拟机执行操作...${NC}"
-    nohup sshpass -p "$PASSWORD" ssh -tt -o StrictHostKeyChecking=no $USERNAME@$vm_ip 'sudo bash -c "curl -s -L https://raw.githubusercontent.com/joker-na/reploy/main/dd.sh | LC_ALL=en_US.UTF-8 bash -s '$WALLERT'"' &
-    exit_status=$?
-    if [ $exit_status -eq 0 ]; then
-        echo -e "\e[32m$vm_ip 成功启动\e[0m"
-    else
-        echo -e "\e[31m$vm_ip 启动失败\e[0m"
-    fi
-else
-    echo -e "${RED}未能获取虚拟机的 IP 地址${NC}"
+    # 使用获取到的 IP 地址执行 sshpass 操作
+    if [ -n "$vm_ip" ]; then
+        echo -e "${GREEN}对新创建的虚拟机执行操作...${NC}"
+        nohup sshpass -p "$PASSWORD" ssh -tt -o StrictHostKeyChecking=no $USERNAME@$vm_ip 'sudo bash -c "curl -s -L https://raw.githubusercontent.com/joker-na/reploy/main/dd.sh | LC_ALL=en_US.UTF-8 bash -s '$WALLERT'"' &
         wait
-fi
+        echo -e "\e[32m操作已在 $vm_ip 上执行\e[0m"
+    else
+        echo -e "${RED}无法获取虚拟机的 IP 地址，操作未执行${NC}"
+    fi
 fi
 	menu
 }
