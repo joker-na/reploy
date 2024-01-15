@@ -273,10 +273,14 @@ create_vm() {
         echo "$i) $size"
         ((i++))
     done
+    echo "0) 返回重新选择地区"
 
-    # 用户选择虚拟机大小
-    read -p "选择虚拟机大小的序号: " size_index
-    if [[ "$size_index" =~ ^[0-9]+$ ]] && [ "$size_index" -ge 1 ] && [ "$size_index" -le "${#vm_sizes[@]}" ]; then
+    read -p "选择虚拟机大小的序号 (或输入 0 返回上一步): " size_index
+    if [[ "$size_index" == "0" ]]; then
+        echo -e "${GREEN}返回重新选择地区...${NC}"
+        create_vm
+        return
+    elif [[ "$size_index" =~ ^[0-9]+$ ]] && [ "$size_index" -ge 1 ] && [ "$size_index" -le "${#vm_sizes[@]}" ]; then
         local selected_size=${vm_sizes[$size_index-1]}
         echo -e "${GREEN}你选择了虚拟机大小：$selected_size${NC}"
     else
