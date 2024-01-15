@@ -39,16 +39,34 @@ install_azure() {
 
 
 select_azure_account() {
-    read -p "输入Azure账户名称（用于创建或选择配置目录）: " account_name
-    export AZURE_CONFIG_DIR=~/.azure-$account_name
-    if [ ! -d "$AZURE_CONFIG_DIR" ]; then
-        mkdir -p $AZURE_CONFIG_DIR
-        echo -e "${GREEN}为账户 $account_name 创建配置目录${NC}"
+    echo "可用的Azure账户："
+    local i=1
+    local accounts=($(ls -d ~/.azure-*))
+    for acc in "${accounts[@]}"; do
+        echo "$i) ${acc##*/}"
+        ((i++))
+    done
+
+    read -p "选择账户的序号（如果需要新账户，请输入n）: " input
+
+    if [[ "$input" =~ ^[0-9]+$ ]] && [ "$input" -ge 1 ] && [ "$input" -le "${#accounts[@]}" ]; then
+        local account_name=${accounts[$input-1]##*/}
+        export AZURE_CONFIG_DIR=~/$account_name
+        echo -e "${GREEN}已选择账户：$account_name${NC}"
+    elif [[ "$input" == "n" ]]; then
+        read -p "输入新Azure账户名称： " new_account
+        export AZURE_CONFIG_DIR=~/.azure-$new_account
+        if [ ! -d "$AZURE_CONFIG_DIR" ]; then
+            mkdir -p $AZURE_CONFIG_DIR
+            echo -e "${GREEN}为新账户 $new_account 创建配置目录${NC}"
+        else
+            echo -e "${GREEN}使用现有账户 $new_account 的配置目录${NC}"
+        fi
     else
-        echo -e "${GREEN}使用账户 $account_name 的现有配置目录${NC}"
+        echo -e "${RED}输入无效，请重新选择${NC}"
+        select_azure_account
     fi
 }
-
 
 login() {
     select_azure_account
