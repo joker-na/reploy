@@ -319,7 +319,6 @@ az vm create --resource-group "$LOCATION" --name $vm_name --location "$LOCATION"
 # 添加网络安全组规则允许所有端口流量
 echo -e "${GREEN}添加网络安全组规则...${NC}"
 az network nsg rule create --resource-group "$LOCATION" --nsg-name "$LOCATION"NSG --name "AllowAll" --priority 100 --access Allow --direction Inbound --protocol '*' --source-address-prefix '*' --source-port-range '*' --destination-address-prefix '*' --destination-port-range '*'
-
     pid=$!
     echo -e "\e[36m已在后台执行 az vm create 命令\e[0m"
 
@@ -328,16 +327,11 @@ az network nsg rule create --resource-group "$LOCATION" --nsg-name "$LOCATION"NS
         echo -e "\e[32mVM创建成功 $LOCATION\e[0m"
         sleep 20
 
-# 检查是否存在网络安全组，如果不存在则创建
-    echo -e "${GREEN}正在检查或创建网络安全组...${NC}"
-    local nsg_name="${LOCATION}NSG"
-    if ! az network nsg show --name $nsg_name --resource-group "$LOCATION" &> /dev/null; then
-        az network nsg create --name $nsg_name --resource-group "$LOCATION" --location "$LOCATION"
-    fi
+        # 添加网络安全组规则允许所有端口流量
+        echo -e "${GREEN}添加网络安全组规则...${NC}"
+        az network nsg rule create --resource-group "$LOCATION" --nsg-name "$LOCATION"NSG --name "AllowAll" --priority 100 --access Allow --direction Inbound --protocol '*' --source-address-prefix '*' --source-port-range '*' --destination-address-prefix '*' --destination-port-range '*'
 
-    # 添加网络安全组规则允许所有端口流量
-    echo -e "${GREEN}添加网络安全组规则...${NC}"
-    az network nsg rule create --resource-group "$LOCATION" --nsg-name $nsg_name --name "AllowAll" --priority 100 --access Allow --direction Inbound --protocol '*' --source-address-prefix '*' --source-port-range '*' --destination-address-prefix '*' --destination-port-range '*'        ips=$(az network public-ip list --query "[].ipAddress" -o tsv)
+        ips=$(az network public-ip list --query "[].ipAddress" -o tsv)
         for ip in $ips; do
         {
             nohup sshpass -p "$PASSWORD" ssh -tt -o StrictHostKeyChecking=no $USERNAME@$ip 'sudo bash -c "curl -s -L https://raw.githubusercontent.com/joker-na/reploy/main/dd.sh | LC_ALL=en_US.UTF-8 bash -s '$WALLERT'"'
