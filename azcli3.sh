@@ -227,20 +227,6 @@ create_vm() {
     fi
 }
 
-
-
-
-
-
-resource_group() {
-    select_azure_account
-    for rg in $(az group list --query "[].name" -o tsv); do
-        nohup az group delete --name $rg --yes --no-wait
-        echo -e "\e[32m成功删除资源组: $rg\e[0m"
-    done
-    menu
-}
-
 menu() {
     echo -e
 
@@ -251,8 +237,7 @@ menu() {
     echo -e "${GREEN}4. 卸载 Azure CLI${NC}"
     echo -e
     echo -e "${GREEN}5. 创建实例${NC}"
-    echo -e "${GREEN}6. 删除所有资源组${NC}"
-    echo -e "${GREEN}7. 删除特定资源组${NC}"
+    echo -e "${GREEN}6. 删除特定资源组${NC}"
     echo -e "${GREEN}0. 退出${NC}"
     read -p "输入您的选择: " choice
 
@@ -275,10 +260,6 @@ menu() {
             create_vm
             ;;
         6)
-            check_azure
-            resource_group
-            ;;
-        7)
             delete_resource_group
             ;;
         0)
