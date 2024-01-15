@@ -263,6 +263,27 @@ create_vm() {
         fi
     done
 
+# 获取并列出所有可用的虚拟机大小
+    echo -e "${GREEN}正在获取可用的虚拟机大小...${NC}"
+    local vm_sizes=($(az vm list-sizes --location $LOCATION --query "[].name" -o tsv))
+
+    echo "可选的虚拟机大小："
+    local i=1
+    for size in "${vm_sizes[@]}"; do
+        echo "$i) $size"
+        ((i++))
+    done
+
+    # 用户选择虚拟机大小
+    read -p "选择虚拟机大小的序号: " size_index
+    if [[ "$size_index" =~ ^[0-9]+$ ]] && [ "$size_index" -ge 1 ] && [ "$size_index" -le "${#vm_sizes[@]}" ]; then
+        local selected_size=${vm_sizes[$size_index-1]}
+        echo -e "${GREEN}你选择了虚拟机大小：$selected_size${NC}"
+    else
+        echo -e "${RED}无效的选择，请重新选择.${NC}"
+        create_vm
+        return
+    fi
     # 直接定义用户名和密码
     USERNAME="azure"
     PASSWORD="hp6#dT0#s4t5t"
@@ -283,7 +304,18 @@ create_vm() {
         fi
     fi
 
-    nohup az vm create --resource-group "$LOCATION" --name "$LOCATION" --location "$LOCATION" --image Debian:debian-10:10:latest --admin-username "$USERNAME" --admin-password "$PASSWORD" --size Standard_B1s --storage-sku Premium_LRS --os-disk-size-gb 64 > /dev/null 2>&1 &
+    # 创建虚拟机并在后台执行
+    local vm_name="$LOCATION-vm"
+    local public_ip_name="$vm_name-ip"
+
+    # 创建动态公共 IP 地址
+    echo -e "${GREEN}正在创建动态公共 IP 地址...${NC}"
+    az network public-ip create --name $public_ip_name --resource-group "$LOCATION" --allocation-method Dynamic --sku Basic
+
+    # 创建虚拟机
+    echo -e "${GREEN}正在创建虚拟机...${NC}"
+    az vm create --resource-group "$LOCATION" --name $vm_name --location "$LOCATION" --image Debian:debian-10:10:latest --admin-username "$USERNAME" --admin-password "$PASSWORD" --size Standard_B1s --storage-sku Premium_LRS --os-disk-size-gb 64 --public-ip-address $public_ip_name --no-wait
+
     pid=$!
     echo -e "\e[36m已在后台执行 az vm create 命令\e[0m"
 
