@@ -323,7 +323,7 @@ menu() {
     echo -e
     echo -e "${GREEN}5. 创建实例${NC}"
     echo -e "${GREEN}6. 删除特定资源组${NC}"
-    echo -e "${GREEN}7. 更换实例IP${NC}"
+    echo -e "${GREEN}7. 更换实例IPp${NC}"
     echo -e "${GREEN}8. 实例信息${NC}"
     echo -e "${GREEN}0. 退出${NC}"
     read -p "输入您的选择: " choice
@@ -351,7 +351,7 @@ menu() {
             ;;
         
         7)
-            restart_vm_to_change_dynamic_ip
+            change_vm_ip_to_basic
             ;;
         
         8)
