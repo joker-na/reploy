@@ -29,7 +29,7 @@ read port
 # 清空Caddyfile并写入新的配置
 echo "${domain} {
   reverse_proxy 127.0.0.1:${port}
-}" | sudo tee /etc/apt/sources.list.d/caddy-stable.list
+}" | sudo tee /etc/caddy/Caddyfile
 
 # 重启Caddy服务以应用新的配置
 sudo systemctl restart caddy
