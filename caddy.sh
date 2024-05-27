@@ -16,4 +16,4 @@ curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/deb/debian.deb.txt' | s
 sudo apt-get update
 
 # 安装Caddy
-sudo apt-get install caddy
+sudo apt-get install caddy -y
