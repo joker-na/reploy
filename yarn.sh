@@ -11,7 +11,3 @@ sudo npm install -g yarn
 
 # 使用 yarn 安装 pm2
 sudo yarn global add pm2
-
-yarn
-
-yarn build
